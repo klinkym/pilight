@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2014 CurlyMo & wo_rasp
+	Copyright (C) 2015 CurlyMo , wo_rasp & meloen
 
 	This file is part of pilight.
 
@@ -77,8 +77,8 @@ static void parseCode(void) {
 		}
 	}
 
-	int unit = binToDecRev(binary, 12, 13);
-	int state = binToDecRev(binary, 15, 15);
+	int unit = binToDecRev(binary, 0, 19);
+	int state = binToDecRev(binary, 20, 13);
 	
 	createMessage(unit, state);
 }
