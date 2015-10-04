@@ -11,12 +11,13 @@
 #include <string.h>
 #include <math.h>
  
-#include "../../pilight.h"
+#include "pilight.h"
 #include "common.h"
 #include "protocol.h"
 #include "log.h"
 #include "json.h"
 #include "bhc9938d.h"
+#include "dso.h"
  
 #ifndef MODULE
  
