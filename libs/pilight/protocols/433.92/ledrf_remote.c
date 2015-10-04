@@ -83,7 +83,7 @@ static void parseCode(void) {
 	createMessage(unit, state);
 }
 
-static void createZero(int s, int e) {
+static void createOne(int s, int e) {
 	int i;
 	for(i=s;i<=e;i+=2) {
 		ledrf_remote->raw[i] = PULSE_LEDRF_REMOTE_SHORT;
@@ -91,7 +91,7 @@ static void createZero(int s, int e) {
 	}
 }
 
-static void createOne(int s, int e) {
+static void createZero(int s, int e) {
 	int i;
 	for(i=s;i<=e;i+=2) {
 		ledrf_remote->raw[i] = PULSE_LEDRF_REMOTE_LONG;
