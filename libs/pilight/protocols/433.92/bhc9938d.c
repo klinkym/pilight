@@ -121,9 +121,9 @@ void bhc9938dInit(void) {
     protocol_set_id(bhc9938d, "bhc9938d");
     protocol_device_add(bhc9938d, "bhc9938d", "BHC9938D protocol");
     
-    options_add(&bhc9938d->options, 'u', "unit", OPTION_HAS_VALUE, CONFIG_ID, JSON_NUMBER, NULL, "^(3[012]?|[012][0-9]|[0-9]{1})$");
-    options_add(&bhc9938d->options, 't', "on", OPTION_NO_VALUE, CONFIG_STATE, JSON_STRING, NULL, NULL);
-    options_add(&bhc9938d->options, 'f', "off", OPTION_NO_VALUE, CONFIG_STATE, JSON_STRING, NULL, NULL);
+    options_add(&bhc9938d->options, 'u', "unit", OPTION_HAS_VALUE, DEVICES_ID, JSON_NUMBER, NULL, "^(3[012]?|[012][0-9]|[0-9]{1})$");
+    options_add(&bhc9938d->options, 't', "on", OPTION_NO_VALUE, DEVICES_STATE, JSON_STRING, NULL, NULL);
+    options_add(&bhc9938d->options, 'f', "off", OPTION_NO_VALUE, DEVICES_STATE, JSON_STRING, NULL, NULL);
     
     bhc9938d -> devtype = RAW;
     bhc9938d -> printHelp = &bhc9938dPrintHelp;
