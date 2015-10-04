@@ -52,7 +52,7 @@ bool strIsInt(const char * str, int * result){
 }
  
  
-static void bhc9938dPrintHelp(void) {
+static void printHelp(void) {
     printf("\t -u --unit=unitnumber\t\tcontrol a device with this unitcode\t (1|2|3)\n");
     printf("\t -t --on\t\t\tsend an on signal\n");
     printf("\t -f --off\t\t\tsend an off signal\n");
@@ -64,7 +64,7 @@ static void bhc9938dPrintHelp(void) {
 */
 }
  
-static int bhc9938dCreateCode(JsonNode * code) {
+static int createCode(struct JsonNode * code) {
     int unit = -1;
     switchState sState = UNKNOWN;
     double itmp = 0;
@@ -109,9 +109,9 @@ static int bhc9938dCreateCode(JsonNode * code) {
     sfree((void *) &rcode);
  
     bhc9938d -> rawlen = i;
-    }
     return EXIT_SUCCESS;
-}
+   
+ }
  
 /*
 // BHC9938D bhc9938d
@@ -125,9 +125,9 @@ void bhc9938dInit(void) {
     options_add(&bhc9938d->options, 't', "on", OPTION_NO_VALUE, DEVICES_STATE, JSON_STRING, NULL, NULL);
     options_add(&bhc9938d->options, 'f', "off", OPTION_NO_VALUE, DEVICES_STATE, JSON_STRING, NULL, NULL);
     
-    bhc9938d -> devtype = RAW;
-    bhc9938d -> printHelp = &bhc9938dPrintHelp;
-    bhc9938d -> createCode = &bhc9938dCreateCode;
+    bhc9938d -> devtype = SWITCH;
+    bhc9938d -> printHelp = &printHelp;
+    bhc9938d -> createCode = &createCode;
 }
  
 #ifdef MODULE
