@@ -133,7 +133,8 @@ static void createUnit(int unit) {
 
 static void createState(int state) {
 	if(state == 1) {
-		createOne(31, 32); //on
+		createOne(20, 22);
+		createZero(23);		//on
 	}
 }
 
