@@ -78,7 +78,7 @@ static void parseCode(void) {
 	}
 
 	int unit = binToDecRev(binary, 0, 19);
-	int state = binToDecRev(binary, 20, 13);
+	int state = binToDecRev(binary, 20, 23);
 	
 	createMessage(unit, state);
 }
