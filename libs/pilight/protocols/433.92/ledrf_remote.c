@@ -1,5 +1,5 @@
 /*
-	Copyright (C) 2015 CurlyMo , wo_rasp & meloen
+	Copyright (C) 2015 CurlyMo , wo_rasp & meloen & Klinkm
 
 	This file is part of pilight.
 
