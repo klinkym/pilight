@@ -30,10 +30,10 @@
 #include "../../core/gc.h"
 #include "ev1527.h"
 
-#define PULSE_MULTIPLIER	3
-#define MIN_PULSE_LENGTH	300
-#define MAX_PULSE_LENGTH	760
-#define AVG_PULSE_LENGTH	380
+#define PULSE_MULTIPLIER	5
+#define MIN_PULSE_LENGTH	251
+#define MAX_PULSE_LENGTH	311
+#define AVG_PULSE_LENGTH	256
 #define RAW_LENGTH				50
 
 static int validate(void) {
@@ -51,9 +51,9 @@ static void createMessage(int unitcode, int state) {
 	ev1527->message = json_mkobject();
 	json_append_member(ev1527->message, "unitcode", json_mknumber(unitcode, 0));
 	if(state == 0) {
-		json_append_member(ev1527->message, "state", json_mkstring("on"));
+		json_append_member(ev1527->message, "state", json_mkstring("opened"));
 	} else {
-		json_append_member(ev1527->message, "state", json_mkstring("off"));
+		json_append_member(ev1527->message, "state", json_mkstring("closed"));
 	}
 }
 
@@ -81,7 +81,7 @@ void ev1527Init(void) {
 	protocol_register(&ev1527);
 	protocol_set_id(ev1527, "ev1527");
 	protocol_device_add(ev1527, "ev1527", "ev1527 contact sensor");
-	ev1527->devtype = SWITCH;
+	ev1527->devtype = CONTACT;
 	ev1527->hwtype = RF433;
 	ev1527->minrawlen = RAW_LENGTH;
 	ev1527->maxrawlen = RAW_LENGTH;
