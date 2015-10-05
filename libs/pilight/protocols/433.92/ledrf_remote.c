@@ -103,36 +103,24 @@ static void createFooter(void) {
 	ledrf_remote->raw[ledrf_remote->rawlen-1] = PULSE_LEDRF_REMOTE_FOOTER;
 }
 
-static void clearCode(void) {
-	createZero(1, ledrf_remote->rawlen-2);
-}
+
 
 static void createUnit(int unit) {
-	switch (unit) {
-		case 0:
-			createZero(25, 30);	// 1st row
-		break;
-		case 1:
-			createOne(25, 26);	// 2nd row
-			createOne(37, 38);	// needs to be set
-		break;
-		case 2:
-			createOne(25, 28);	// 3rd row
-			createOne(37, 38);	// needs to be set
-		break;
-		case 3:
-			createOne(27, 28);	// 4th row
-		break;
-		case 4:
-			createOne(25, 30);	// 6th row MASTER (all)
-		break;
-		default:
-		break;
+	int binary[16], length = 0, i = 0, x = 23;
+
+	length = decToBin(id, binary);
+	for(i=length;i>=0;i--) {
+		if(binary[i] == 1) {
+			createOne(x, x+1);
+		}
+		x = x-2;
 	}
-}
+	createZero(1, ledrf_remote->rawlen-2);
+ }
+	
 
 static void createState(int state) {
-	if(state == 1) {
+	 {
 		createOne(20, 22);
 		createZero(23);		//on
 	}
@@ -158,7 +146,6 @@ static int createCode(JsonNode *code) {
 	} else {	
 		ledrf_remote->rawlen = RAW_LENGTH;
 		createMessage(unit, state);
-		clearCode();
 		createUnit(unit);
 		createState(state);
 		createFooter();
@@ -190,7 +177,7 @@ void ledrfremoteInit(void) {
 
 	options_add(&ledrf_remote->options, 't', "on", OPTION_NO_VALUE, DEVICES_STATE, JSON_STRING, NULL, NULL);
 	options_add(&ledrf_remote->options, 'f', "off", OPTION_NO_VALUE, DEVICES_STATE, JSON_STRING, NULL, NULL);
-	options_add(&ledrf_remote->options, 'u', "unit", OPTION_HAS_VALUE, DEVICES_ID, JSON_NUMBER, NULL, "^([0-3])$");
+	options_add(&ledrf_remote->options, 'u', "unit", OPTION_HAS_VALUE, DEVICES_ID, JSON_NUMBER, NULL, "^([1-9]|[1-9][0-9]|[1-9][0-9][0-9]|[1-3][0-9][0-9][0-9]|40[0-8][0-9]|409[0-5])$");
 
 	options_add(&ledrf_remote->options, 0, "readonly", OPTION_HAS_VALUE, GUI_SETTING, JSON_NUMBER, (void *)0, "^[10]{1}$");
 	options_add(&ledrf_remote->options, 0, "confirm", OPTION_HAS_VALUE, GUI_SETTING, JSON_NUMBER, (void *)0, "^[10]{1}$");
