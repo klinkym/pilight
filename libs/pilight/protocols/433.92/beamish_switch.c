@@ -30,13 +30,13 @@
 #include "../../core/gc.h"
 #include "beamish_switch.h"
 
-#define PULSE_MULTIPLIER	4
-#define MIN_PULSE_LENGTH	318
-#define MAX_PULSE_LENGTH	328
-#define AVG_PULSE_LENGTH	323
+#define PULSE_MULTIPLIER	3
+#define MIN_PULSE_LENGTH	300
+#define MAX_PULSE_LENGTH	760
+#define AVG_PULSE_LENGTH	380
 #define RAW_LENGTH				50
 
-static int map[7] = {0, 192, 48, 12, 3, 15, 195};
+static int map[7] = {0, 14, 48, 12, 3, 15, 195};
 
 static int validate(void) {
 	if(beamish_switch->rawlen == RAW_LENGTH) {
@@ -77,8 +77,8 @@ static void parseCode(void) {
 		}
 	}
 
-	id = binToDecRev(binary, 0, 15);
-	code = binToDecRev(binary, 16, 23);
+	id = binToDecRev(binary, 0, 19);
+	code = binToDecRev(binary, 20, 23);
 
 	for(y=0;y<7;y++) {
 		if(map[y] == code) {
@@ -99,7 +99,7 @@ static void parseCode(void) {
 	createMessage(id, unit, state, all);
 }
 
-static void createHigh(int s, int e) {
+static void createLow(int s, int e) {
 	int i;
 
 	for(i=s;i<=e;i+=2) {
@@ -108,7 +108,7 @@ static void createHigh(int s, int e) {
 	}
 }
 
-static void createLow(int s, int e) {
+static void createHigh(int s, int e) {
 	int i;
 
 	for(i=s;i<=e;i+=2) {
@@ -130,7 +130,7 @@ static void createId(int id) {
 	for(i=0;i<=length;i++) {
 		if(binary[i]==1) {
 			x=i*2;
-			createLow(31-(x+1), 31-x);
+			createLow(39-(x+1), 39-x);
 		}
 	}
 }
