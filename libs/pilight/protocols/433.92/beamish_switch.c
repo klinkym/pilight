@@ -36,7 +36,7 @@
 #define AVG_PULSE_LENGTH	380
 #define RAW_LENGTH				50
 
-static int map[7] = {0, 14, 48, 12, 3, 15, 195};
+static int map[7] = {0, 14, 6, 7, 8, 15, 195};
 
 static int validate(void) {
 	if(beamish_switch->rawlen == RAW_LENGTH) {
