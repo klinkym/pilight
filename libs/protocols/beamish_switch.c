@@ -1,17 +1,13 @@
 /*
 	Copyright (C) 2014 CurlyMo & wo-rasp
-
 	This file is part of pilight.
-
 	pilight is free software: you can redistribute it and/or modify it under the
 	terms of the GNU General Public License as published by the Free Software
 	Foundation, either version 3 of the License, or (at your option) any later
 	version.
-
 	pilight is distributed in the hope that it will be useful, but WITHOUT ANY
 	WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
 	A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
-
 	You should have received a copy of the GNU General Public License
 	along with pilight. If not, see	<http://www.gnu.org/licenses/>
 */
@@ -31,7 +27,7 @@
 #include "gc.h"
 #include "beamish_switch.h"
 
-static int beamishSwMap[7]={0, 192, 48, 12, 3, 15, 195};
+static int beamishSwMap[7]={0, 14, 6, 7, 8, 15, 195};
 
 static void beamishSwCreateMessage(int id, int unit, int state, int all) {
 	beamish_switch->message = json_mkobject();
@@ -56,9 +52,9 @@ static void beamishSwParseCode(void) {
 	for(i=0;i<beamish_switch->rawlen;i+=2) {
 		beamish_switch->binary[x++] = beamish_switch->code[i];
 	}
-	id = binToDecRev(beamish_switch->binary, 0, 15);
+	id = binToDecRev(beamish_switch->binary, 0, 19);
 
-	code = binToDecRev(beamish_switch->binary, 16, 23);
+	code = binToDecRev(beamish_switch->binary, 20, 23);
 
 	for(y=0;y<7;y++) {
 		if(beamishSwMap[y] == code) {
@@ -79,7 +75,7 @@ static void beamishSwParseCode(void) {
 	beamishSwCreateMessage(id, unit, state, all);
 }
 
-static void beamishSwCreateHigh(int s, int e) {
+static void beamishSwCreateLow(int s, int e) {
 	int i;
 
 	for(i=s;i<=e;i+=2) {
@@ -88,7 +84,7 @@ static void beamishSwCreateHigh(int s, int e) {
 	}
 }
 
-static void beamishSwCreateLow(int s, int e) {
+static void beamishSwCreateHigh(int s, int e) {
 	int i;
 
 	for(i=s;i<=e;i+=2) {
@@ -110,7 +106,7 @@ static void beamishSwCreateId(int id) {
 	for(i=0;i<=length;i++) {
 		if(binary[i]==1) {
 			x=i*2;
-			beamishSwCreateLow(31-(x+1), 31-x);
+			beamishSwCreateLow(39-(x+1), 39-x);
 		}
 	}
 }
@@ -155,7 +151,7 @@ static int beamishSwCreateCode(JsonNode *code) {
 	if(id == -1 || (unit == -1 && all == 0) || (state == -1 && all == 1)) {
 		logprintf(LOG_ERR, "beamish_switch: insufficient number of arguments");
 		return EXIT_FAILURE;
-	} else if(id > 65535 || id < 1) {
+	} else if(id > 1048576 || id < 1) {
 		logprintf(LOG_ERR, "beamish_switch: invalid id range");
 		return EXIT_FAILURE;
 	} else if((unit > 4 || unit < 1) && all == 0) {
@@ -193,17 +189,17 @@ void beamishSwInit(void) {
 	protocol_register(&beamish_switch);
 	protocol_set_id(beamish_switch, "beamish_switch");
 	protocol_device_add(beamish_switch, "beamish_switch", "beamish_switch Switches");
-	protocol_plslen_add(beamish_switch, 323);
+	protocol_plslen_add(beamish_switch, 380);
 	beamish_switch->devtype = SWITCH;
 	beamish_switch->hwtype = RF433;
-	beamish_switch->pulse = 4;
+	beamish_switch->pulse = 3;
 	beamish_switch->rawlen = 50;
 	beamish_switch->binlen = 12;
 
 	options_add(&beamish_switch->options, 't', "on", OPTION_NO_VALUE, DEVICES_STATE, JSON_STRING, NULL, NULL);
 	options_add(&beamish_switch->options, 'f', "off", OPTION_NO_VALUE, DEVICES_STATE, JSON_STRING, NULL, NULL);
 	options_add(&beamish_switch->options, 'u', "unit", OPTION_HAS_VALUE, DEVICES_ID, JSON_NUMBER, NULL, "^([1-4])$");
-	options_add(&beamish_switch->options, 'i', "id", OPTION_HAS_VALUE, DEVICES_ID, JSON_NUMBER, NULL, "^([0-9]{1,4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$");
+	options_add(&beamish_switch->options, 'i', "id", OPTION_HAS_VALUE, DEVICES_ID, JSON_NUMBER, NULL, "^([1-9]|[1-9][0-9]|[1-9][0-9][0-9]|[1-9][0-9][0-9][0-9]|[1-9][0-9][0-9][0-9][0-9]|[1-9][0-9][0-9][0-9][0-9][0-9]|10[0-3][0-9][0-9][0-9][0-9]|104[0-7][0-9][0-9][0-9]|1048[1-4][0-9][0-9]|10485[0-6][0-9]|104857[0-6])$");
 	options_add(&beamish_switch->options, 'a', "all", OPTION_NO_VALUE, 0, JSON_NUMBER, NULL, NULL);
 
 	options_add(&beamish_switch->options, 0, "readonly", OPTION_HAS_VALUE, GUI_SETTING, JSON_NUMBER, (void *)0, "^[10]{1}$");
@@ -225,5 +221,3 @@ void init(void) {
 	beamishSwInit();
 }
 #endif
-
-
