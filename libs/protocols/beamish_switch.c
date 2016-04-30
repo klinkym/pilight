@@ -21,19 +21,35 @@
 #include <string.h>
 #include <math.h>
 
-#include "../../pilight.h"
-#include "common.h"
-#include "dso.h"
-#include "log.h"
-#include "protocol.h"
-#include "hardware.h"
-#include "binary.h"
-#include "gc.h"
+#include "../../core/pilight.h"
+#include "../../core/common.h"
+#include "../../core/dso.h"
+#include "../../core/log.h"
+#include "../protocol.h"
+#include "../../core/binary.h"
+#include "../../core/gc.h"
 #include "beamish_switch.h"
 
-static int beamishSwMap[7]={0, 192, 48, 12, 3, 15, 195};
+#define PULSE_MULTIPLIER	3
+#define MIN_PULSE_LENGTH	300
+#define MAX_PULSE_LENGTH	760
+#define AVG_PULSE_LENGTH	380
+#define RAW_LENGTH				50
 
-static void beamishSwCreateMessage(int id, int unit, int state, int all) {
+static int map[7] = {0, 14, 48, 12, 3, 15, 195};
+
+static int validate(void) {
+	if(beamish_switch->rawlen == RAW_LENGTH) {
+		if(beamish_switch->raw[beamish_switch->rawlen-1] >= (MIN_PULSE_LENGTH*PULSE_DIV) &&
+		   beamish_switch->raw[beamish_switch->rawlen-1] <= (MAX_PULSE_LENGTH*PULSE_DIV)) {
+			return 0;
+		}
+	}
+
+	return -1;
+}
+
+static void createMessage(int id, int unit, int state, int all) {
 	beamish_switch->message = json_mkobject();
 	json_append_member(beamish_switch->message, "id", json_mknumber(id, 0));
 	if(all == 1) {
@@ -49,19 +65,23 @@ static void beamishSwCreateMessage(int id, int unit, int state, int all) {
 	}
 }
 
-static void beamishSwParseCode(void) {
-	int i = 0, x = 0, y = 0;
+static void parseCode(void) {
+	int i = 0, x = 0, y = 0, binary[RAW_LENGTH/2];
 	int id = -1, state = -1, unit = -1, all = 0, code = 0;
 
-	for(i=0;i<beamish_switch->rawlen;i+=2) {
-		beamish_switch->binary[x++] = beamish_switch->code[i];
+	for(x=0;x<beamish_switch->rawlen;x+=2) {
+		if(beamish_switch->raw[x] > (int)((double)AVG_PULSE_LENGTH*((double)PULSE_MULTIPLIER/2))) {
+			binary[i++] = 1;
+		} else {
+			binary[i++] = 0;
+		}
 	}
-	id = binToDecRev(beamish_switch->binary, 0, 15);
 
-	code = binToDecRev(beamish_switch->binary, 16, 23);
+	id = binToDecRev(binary, 0, 19);
+	code = binToDecRev(binary, 20, 23);
 
 	for(y=0;y<7;y++) {
-		if(beamishSwMap[y] == code) {
+		if(map[y] == code) {
 			unit = y;
 			break;
 		}
@@ -76,32 +96,32 @@ static void beamishSwParseCode(void) {
 		all = 1;
 	}
 
-	beamishSwCreateMessage(id, unit, state, all);
+	createMessage(id, unit, state, all);
 }
 
-static void beamishSwCreateHigh(int s, int e) {
+static void createLow(int s, int e) {
 	int i;
 
 	for(i=s;i<=e;i+=2) {
-		beamish_switch->raw[i]=(beamish_switch->plslen->length);
-		beamish_switch->raw[i+1]=(beamish_switch->pulse*beamish_switch->plslen->length);
+		beamish_switch->raw[i]=(AVG_PULSE_LENGTH);
+		beamish_switch->raw[i+1]=(PULSE_MULTIPLIER*AVG_PULSE_LENGTH);
 	}
 }
 
-static void beamishSwCreateLow(int s, int e) {
+static void createHigh(int s, int e) {
 	int i;
 
 	for(i=s;i<=e;i+=2) {
-		beamish_switch->raw[i]=(beamish_switch->pulse*beamish_switch->plslen->length);
-		beamish_switch->raw[i+1]=(beamish_switch->plslen->length);
+		beamish_switch->raw[i]=(PULSE_MULTIPLIER*AVG_PULSE_LENGTH);
+		beamish_switch->raw[i+1]=(AVG_PULSE_LENGTH);
 	}
 }
 
-static void beamishSwClearCode(void) {
-	beamishSwCreateHigh(0,47);
+static void clearCode(void) {
+	createHigh(0,47);
 }
 
-static void beamishSwCreateId(int id) {
+static void createId(int id) {
 	int binary[255];
 	int length = 0;
 	int i=0, x=0;
@@ -110,12 +130,12 @@ static void beamishSwCreateId(int id) {
 	for(i=0;i<=length;i++) {
 		if(binary[i]==1) {
 			x=i*2;
-			beamishSwCreateLow(31-(x+1), 31-x);
+			createLow(39-(x+1), 39-x);
 		}
 	}
 }
 
-static void beamishSwCreateUnit(int unit) {
+static void createUnit(int unit) {
 	int binary[255];
 	int length = 0;
 	int i=0, x=0;
@@ -124,17 +144,17 @@ static void beamishSwCreateUnit(int unit) {
 	for(i=0;i<=length;i++) {
 		if(binary[i]==1) {
 			x=i*2;
-			beamishSwCreateLow(47-(x+1), 47-x);
+			createLow(47-(x+1), 47-x);
 		}
 	}
 }
 
-static void beamishSwCreateFooter(void) {
-	beamish_switch->raw[48]=(beamish_switch->plslen->length);
-	beamish_switch->raw[49]=(PULSE_DIV*beamish_switch->plslen->length);
+static void createFooter(void) {
+	beamish_switch->raw[48]=(AVG_PULSE_LENGTH);
+	beamish_switch->raw[49]=(PULSE_DIV*AVG_PULSE_LENGTH);
 }
 
-static int beamishSwCreateCode(JsonNode *code) {
+static int createCode(struct JsonNode *code) {
 	int id = -1;
 	int unit = -1;
 	int state = -1;
@@ -167,17 +187,18 @@ static int beamishSwCreateCode(JsonNode *code) {
 		if(all == 1 && state == 0)
 			unit = 6;
 
-		beamishSwCreateMessage(id, unit, state, all);
-		beamishSwClearCode();
-		beamishSwCreateId(id);
-		unit = beamishSwMap[unit];
-		beamishSwCreateUnit(unit);
-		beamishSwCreateFooter();
+		createMessage(id, unit, state, all);
+		clearCode();
+		createId(id);
+		unit = map[unit];
+		createUnit(unit);
+		createFooter();
+		beamish_switch->rawlen = RAW_LENGTH;
 	}
 	return EXIT_SUCCESS;
 }
 
-static void beamishSwPrintHelp(void) {
+static void printHelp(void) {
 	printf("\t -t --on\t\t\tsend an on signal\n");
 	printf("\t -f --off\t\t\tsend an off signal\n");
 	printf("\t -u --unit=unit\t\t\tcontrol a device with this unit code\n");
@@ -185,45 +206,45 @@ static void beamishSwPrintHelp(void) {
 	printf("\t -a --all\t\t\tsend command to all devices with this id\n");
 }
 
-#ifndef MODULE
+#if !defined(MODULE) && !defined(_WIN32)
 __attribute__((weak))
 #endif
-void beamishSwInit(void) {
+void beamishSwitchInit(void) {
 
 	protocol_register(&beamish_switch);
 	protocol_set_id(beamish_switch, "beamish_switch");
 	protocol_device_add(beamish_switch, "beamish_switch", "beamish_switch Switches");
-	protocol_plslen_add(beamish_switch, 323);
 	beamish_switch->devtype = SWITCH;
 	beamish_switch->hwtype = RF433;
-	beamish_switch->pulse = 4;
-	beamish_switch->rawlen = 50;
-	beamish_switch->binlen = 12;
+	beamish_switch->minrawlen = RAW_LENGTH;
+	beamish_switch->maxrawlen = RAW_LENGTH;
+	beamish_switch->maxgaplen = MAX_PULSE_LENGTH*PULSE_DIV;
+	beamish_switch->mingaplen = MIN_PULSE_LENGTH*PULSE_DIV;
 
 	options_add(&beamish_switch->options, 't', "on", OPTION_NO_VALUE, DEVICES_STATE, JSON_STRING, NULL, NULL);
 	options_add(&beamish_switch->options, 'f', "off", OPTION_NO_VALUE, DEVICES_STATE, JSON_STRING, NULL, NULL);
 	options_add(&beamish_switch->options, 'u', "unit", OPTION_HAS_VALUE, DEVICES_ID, JSON_NUMBER, NULL, "^([1-4])$");
-	options_add(&beamish_switch->options, 'i', "id", OPTION_HAS_VALUE, DEVICES_ID, JSON_NUMBER, NULL, "^([0-9]{1,4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$");
+	options_add(&beamish_switch->options, 'i', "id", OPTION_HAS_VALUE, DEVICES_ID, JSON_NUMBER, NULL, "^([1-9]|[1-9][0-9]|[1-9][0-9][0-9]|[1-9][0-9][0-9][0-9]|[1-9][0-9][0-9][0-9][0-9]|[1-9][0-9][0-9][0-9][0-9][0-9]|10[0-3][0-9][0-9][0-9][0-9]|104[0-7][0-9][0-9][0-9]|1048[1-4][0-9][0-9]|10485[0-6][0-9]|104857[0-6])$");
 	options_add(&beamish_switch->options, 'a', "all", OPTION_NO_VALUE, 0, JSON_NUMBER, NULL, NULL);
 
 	options_add(&beamish_switch->options, 0, "readonly", OPTION_HAS_VALUE, GUI_SETTING, JSON_NUMBER, (void *)0, "^[10]{1}$");
+	options_add(&beamish_switch->options, 0, "confirm", OPTION_HAS_VALUE, GUI_SETTING, JSON_NUMBER, (void *)0, "^[10]{1}$");
 
-	beamish_switch->parseCode=&beamishSwParseCode;
-	beamish_switch->createCode=&beamishSwCreateCode;
-	beamish_switch->printHelp=&beamishSwPrintHelp;
+	beamish_switch->parseCode=&parseCode;
+	beamish_switch->createCode=&createCode;
+	beamish_switch->printHelp=&printHelp;
+	beamish_switch->validate=&validate;
 }
 
-#ifdef MODULE
+#if defined(MODULE) && !defined(_WIN32)
 void compatibility(struct module_t *module) {
 	module->name = "beamish_switch";
-	module->version = "0.10";
-	module->reqversion = "5.0";
+	module->version = "1.0";
+	module->reqversion = "6.0";
 	module->reqcommit = "84";
 }
 
 void init(void) {
-	beamishSwInit();
+	beamishSwitchInit();
 }
 #endif
-
-
